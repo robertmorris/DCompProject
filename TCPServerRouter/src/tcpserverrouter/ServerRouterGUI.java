@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package tcpserverrouter;
 
 import java.awt.List;
@@ -20,10 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JList;
 
-/**
- *
- * @author overload
- */
+
 public class ServerRouterGUI extends javax.swing.JFrame {
 
     Socket clientSocket;
@@ -34,9 +27,9 @@ public class ServerRouterGUI extends javax.swing.JFrame {
     int tableIndex;
     CommunicationThread commThread;
     InetAddress addr;
-    HashSet<String> names = new HashSet<String>();
-    HashSet<PrintWriter> writers = new HashSet<PrintWriter>();
-    ArrayList<String> clientList = new ArrayList<String>();
+    HashSet<String> names = new HashSet<>();
+    HashSet<PrintWriter> writers = new HashSet<>();
+    ArrayList<String> clientList = new ArrayList<>();
     
     ServerSocket serverToserver;
     Socket serverComSocket;
@@ -140,7 +133,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                 clientSocket = null; // socket for the thread
                 int SockNum = Integer.parseInt(SocketTextField.getText()); // port number
                 running = true;//locks server start
-                //tableIndex = 0; // RouteTable Index
+                tableIndex = 0; // RouteTable Index
                 //table will hold up to 20 connections
                 RouteTable = new Object[20][2];
                 BufferedReader in;
@@ -152,12 +145,12 @@ public class ServerRouterGUI extends javax.swing.JFrame {
 
                 MessageArea.append("ServerRouter is Listening on port: " + SockNum + " \n");
 
-                while (running == true) {
+                while (true) {
                     try {
-                        
-                        while(true){
-                            
-                        new MakeServerRequest(RouteTable, tableIndex).start();
+                                
+                        serverSocket = null;
+                        serverSocket = new ServerSocket(SockNum);
+                        //new MakeServerRequest(RouteTable, tableIndex).start();
                             
                         //new Handler(serverSocket.accept()).start();
                         clientSocket = serverSocket.accept();
@@ -170,8 +163,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                         }
                         else if(incoming == "SERVERREQUEST")
                         {
-                            new ServerHandler(clientSocket, clientList, RouteTable, tableIndex).start();
-                            
+                            new ServerHandler(clientSocket, clientList, RouteTable, tableIndex).start();                           
                         }
                         
                         //commThread = new CommunicationThread(RouteTable, clientSocket, tableIndex); // creates a thread with a random port
@@ -180,7 +172,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                         //output communication and add client/server to list of connections
                         MessageArea.append("ServerRouter connected with Client/Server: " + clientSocket.getInetAddress().getHostAddress() + "\n");
                         //CSListArea.append(clientSocket.getInetAddress().getHostAddress() + "\n");
-                        }
+                        
           
                     } catch (IOException e) {
                         MessageArea.append("Client/Server failed to connect.");
@@ -191,8 +183,8 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                 }//end while
 
                 //closing connections
-                clientSocket.close();
-                serverSocket.close();
+                //clientSocket.close();
+                //serverSocket.close();
                 
             } catch (IOException e) {
                 MessageArea.append("Could not listen on port: 5555. \n");
