@@ -72,7 +72,7 @@ public class ClientGUI extends javax.swing.JFrame {
                 socket = null; // socket to connect with ServerRouter
                 out = null; // for writing to ServerRouter
                 in = null; // for reading form ServerRouter
-
+                String test;
                 routerIP = RouterTextField.getText();
                 portNumber = Integer.parseInt(SocketTextField.getText()); // port number
                 MessageTextArea.append("Connecting to Router: " + routerIP + " Socket: " + portNumber + "\n");
@@ -92,6 +92,11 @@ public class ClientGUI extends javax.swing.JFrame {
                     MessageTextArea.append("Couldn't get I/O for the connection to: " + routerIP + "\n");
 
                 }
+                
+                out.println("CLIENTCOMM");
+                
+                test = in.readLine();
+                
 
                 //open up a file chooser.  Allows users to pick what file they want
                 //to send.
