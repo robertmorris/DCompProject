@@ -97,6 +97,9 @@ public class ClientGUI extends javax.swing.JFrame {
                 
                 test = in.readLine();
                 
+                MessageTextArea.append(test);
+                
+                test = in.readLine();
 
                 //open up a file chooser.  Allows users to pick what file they want
                 //to send.
