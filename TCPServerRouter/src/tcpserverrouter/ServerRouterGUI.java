@@ -147,23 +147,22 @@ public class ServerRouterGUI extends javax.swing.JFrame {
 
                 while (true) {
                     try {
-                                
-                        serverSocket = null;
-                        serverSocket = new ServerSocket(SockNum);
+                        
+                        
                         //new MakeServerRequest(RouteTable, tableIndex).start();
                             
                         //new Handler(serverSocket.accept()).start();
                         clientSocket = serverSocket.accept();
                         in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                         incoming = in.readLine();
-                        if(incoming == "CLIENTCOMM")
-                        {
-                            new CommunicationThread(RouteTable,clientSocket,tableIndex).start();   
-                            //new MakeServerRequest(RouteTable, tableIndex).start();
-                        }
-                        else if(incoming == "SERVERREQUEST")
-                        {
-                            new ServerHandler(clientSocket, clientList, RouteTable, tableIndex).start();                           
+                        switch (incoming) {
+                            case "CLIENTCOMM":
+                                new CommunicationThread(RouteTable,clientSocket,tableIndex).start();
+                                //new MakeServerRequest(RouteTable, tableIndex).start();
+                                break;
+                            case "SERVERREQUEST":
+                                new ServerHandler(clientSocket, clientList, RouteTable, tableIndex).start();
+                                break;                           
                         }
                         
                         //commThread = new CommunicationThread(RouteTable, clientSocket, tableIndex); // creates a thread with a random port
@@ -178,7 +177,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                         MessageArea.append("Client/Server failed to connect.");
                         e.printStackTrace();
                     }finally{
-                        serverSocket.close();
+                        //serverSocket.close();
                     }
                 }//end while
 
@@ -479,6 +478,8 @@ public class ServerRouterGUI extends javax.swing.JFrame {
 
         public void run() {
             try{
+                
+                out.println("Your in like flin!");
                 
             while(true)
             {
