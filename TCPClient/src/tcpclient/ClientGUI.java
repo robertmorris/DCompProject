@@ -95,6 +95,8 @@ public class ClientGUI extends javax.swing.JFrame {
                 
                 out.println("CLIENTCOMM");
                 
+                
+                
                 test = in.readLine();
                 
                 MessageTextArea.append(test);
