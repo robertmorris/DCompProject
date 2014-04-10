@@ -147,21 +147,20 @@ public class ServerRouterGUI extends javax.swing.JFrame {
 
                 while (true) {
                     try {
-                        
-                        
-                        //new MakeServerRequest(RouteTable, tableIndex).start();
-                            
+                                               
+                        //new MakeServerRequest(RouteTable, tableIndex).start();                          
                         //new Handler(serverSocket.accept()).start();
                         clientSocket = serverSocket.accept();
                         in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                         incoming = in.readLine();
                         switch (incoming) {
                             case "CLIENTCOMM":
-                                new CommunicationThread(RouteTable,clientSocket,tableIndex).start();
+                                new CommunicationThread(RouteTable,clientSocket,tableIndex, writers).start();
                                 //new MakeServerRequest(RouteTable, tableIndex).start();
                                 break;
                             case "SERVERREQUEST":
-                                new ServerHandler(clientSocket, clientList, RouteTable, tableIndex).start();
+                                new MakeServerRequest(RouteTable, tableIndex, writers).start();
+                                //new ServerHandler(clientSocket, clientList, RouteTable, tableIndex).start();                             
                                 break;                           
                         }
                         
@@ -202,20 +201,22 @@ public class ServerRouterGUI extends javax.swing.JFrame {
         private String address; // communication strings
         private Socket outGoingSocket; // socket for communicating with a destination
         private int tableIndex; // indext in the routing table
+        private HashSet<PrintWriter> writers;
         
-            private MakeServerRequest(Object[][] table, int index) {
+            private MakeServerRequest(Object[][] table, int index,HashSet<PrintWriter> wr) throws IOException {
                 this.RouteTable = table;
-                this.tableIndex = index;
-               
+                this.tableIndex = index;      
+                writers = wr;
             }
             
             public void Run()
             {
                 try{
+                    
                     outGoingSocket = new Socket("localhost", 5555);
                     out = new PrintWriter(outGoingSocket.getOutputStream(), true);
                     in = new BufferedReader(new InputStreamReader(outGoingSocket.getInputStream()));
-                    
+                                   
                     out.println("SERVERREQUEST");
                     
                     while(true)
@@ -461,9 +462,10 @@ public class ServerRouterGUI extends javax.swing.JFrame {
         private String address; // communication strings
         private Socket outGoingSocket; // socket for communicating with a destination
         private int tableIndex; // indext in the routing table
+        private HashSet<PrintWriter> writers;
 
         // Constructor
-        CommunicationThread(Object[][] Table, Socket ClientSoc, int index) throws IOException {
+        CommunicationThread(Object[][] Table, Socket ClientSoc, int index, HashSet<PrintWriter> wr) throws IOException {
             
             //set the in and out stream for communication
             out = new PrintWriter(ClientSoc.getOutputStream(), true);
@@ -474,6 +476,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
             RouteTable[index][0] = address; // IP addresses 
             RouteTable[index][1] = ClientSoc; // sockets for communication
             tableIndex = index; 
+            writers = wr;
         }
 
         public void run() {
@@ -481,14 +484,42 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                 
                 out.println("Your in like flin!");
                 
+                for (int i = 0; i < RouteTable.length; i += 1) {
+                
+                out.println(RouteTable[i][0]);
+                out.println(RouteTable[i][1]);
+                
+                if(i+1 == RouteTable.length)
+                {
+                    out.println("BYE");
+                    break;
+                }
+                
+                //outGoingSocket = (Socket) RouteTable[i][1]; // gets the socket for communication from the table
+                
+                //MessageArea.append("Found destination: " + destinationIP + "\n");
+                //outToDestination = new PrintWriter(outGoingSocket.getOutputStream(), true); // assigns a writer
+            }
+                
+                
+                
             while(true)
             {
-            synchronized(address){
-                if(!names.contains(address)){
-                    names.add(address);
-                    //cl.add(name);
-                    //break;
-                    CSListArea.append(address);
+                
+                
+                synchronized(out){
+                if(!writers.contains(out)){
+                    for(PrintWriter w : writers){
+                        w.println(out.toString());
+                    }
+                    writers.add(out);
+                    CSListArea.append(address);                 
+                }
+                
+                input = in.readLine();
+                
+                if(input.equals("BYE")){
+                    break;
                 }
             }
             
@@ -504,22 +535,6 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                 
             }
                     */
-            
-            for (int i = 0; i < RouteTable.length; i += 1) {
-                
-                out.println(RouteTable[i][0]);
-                out.println(RouteTable[i][1]);
-                
-                if(i+1 == RouteTable.length)
-                {
-                    out.println("BYE");
-                    break;
-                }
-                //outGoingSocket = (Socket) RouteTable[i][1]; // gets the socket for communication from the table
-                
-                //MessageArea.append("Found destination: " + destinationIP + "\n");
-                //outToDestination = new PrintWriter(outGoingSocket.getOutputStream(), true); // assigns a writer
-            }
             out.close();
             in.close();
             }
