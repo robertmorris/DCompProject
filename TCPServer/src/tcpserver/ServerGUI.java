@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.logging.Level;
@@ -16,12 +17,17 @@ import javax.swing.DefaultListModel;
 public class ServerGUI extends javax.swing.JFrame {
 
     Socket socket; // socket to connect with ServerRouter
+    Socket socket2;
+    ServerSocket serverSocket;
+    int serverPortNumber;
     PrintWriter out; // for writing to ServerRouter
     BufferedReader in; // for reading form ServerRouter
+    PrintWriter out2;
+    BufferedReader in2;
     InetAddress localAddress;//used to grab local machines ip
     String hostAddress; // Server machine's IP			
     String routerIP;//address to the server router
-    int portNumber; // port number
+    int routerPortNumber; // port number
     boolean isConnected;//used for connection status
     String serverText; // messages sent to ServerRouter
     String clientText; // messages received from ServerRouter      
@@ -42,6 +48,64 @@ public class ServerGUI extends javax.swing.JFrame {
             Logger.getLogger(ServerGUI.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    public class Listener implements Runnable {
+        
+        public void run() {
+            while(true)
+                    {
+                        try {
+                            
+                            serverPortNumber = Integer.parseInt(ServerSocketField.getText());                
+                            serverSocket = new ServerSocket(serverPortNumber);
+                            
+                            socket2 = serverSocket.accept();
+                            
+                            out2 = new PrintWriter(socket2.getOutputStream(), true);
+                            in2 = new BufferedReader(new InputStreamReader(socket2.getInputStream()));
+                            
+                             
+                    try {
+
+                        // Communication process (initial sends/receives)
+                        //out2.println("GO");// initial send (IP of the destination Client)
+
+                     
+                        // Communication while loop.  Will run as long as
+                        //information is coming from client via the server router.
+                        while ((clientText = in2.readLine()) != null) {
+                            
+                            //This takes in text sent and capitalizes it then
+                            //sends it back to the server router which forwards
+                            //it to the client
+                            MessageTextArea.append("Client said: " + clientText + "\n");
+                            // converting received message to upper case
+                            serverText = clientText.toUpperCase(); 
+                            
+                            MessageTextArea.append("Server said: " + serverText + "\n");
+                            // sending the converted message back to the Client via ServerRouter
+                            out2.println(serverText); 
+                        }
+                    
+
+                        //closing connections
+                        out2.close();
+                        in2.close();
+                        socket2.close();
+                        serverSocket.close();
+                
+                    } catch (IOException ex) {
+                        Logger.getLogger(ServerGUI.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                        
+                            
+                        
+                } catch (IOException ex) {
+                    Logger.getLogger(ServerGUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                    }
+        }
+        
+    }
 
     public class ServerStart implements Runnable {
 
@@ -50,17 +114,17 @@ public class ServerGUI extends javax.swing.JFrame {
 
                 if (isConnected == false) {
                     
-                    RouteTable = new Object[20][2];
+                    
                     
                     //set router IP and Socket from GUI textbox inputs
                     routerIP = RouterAddressTextField.getText();
-                    portNumber = Integer.parseInt(SocketTextField.getText()); // port number
+                    routerPortNumber = Integer.parseInt(SocketTextField.getText()); // port number
 
-                    MessageTextArea.append("Trying to connect. Router: " + routerIP + " Socket: " + portNumber + "\n");
+                    MessageTextArea.append("Trying to connect. Router: " + routerIP + " Socket: " + routerPortNumber + "\n");
                     // Tries to connect to the ServerRouter
                     try {
                         
-                        socket = new Socket(routerIP, portNumber);
+                        socket = new Socket(routerIP, routerPortNumber);
                         out = new PrintWriter(socket.getOutputStream(), true);
                         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                         MessageTextArea.append("Connection completed. \n");
@@ -77,73 +141,22 @@ public class ServerGUI extends javax.swing.JFrame {
                         
                     }
       
-                    out.println("CLIENTCOMM");
+                    out.println("SERVERCOMM");
+                    MessageTextArea.append(in.readLine());
+                    out.println(Integer.parseInt(ServerSocketField.getText()));
                     String incoming = "";
-                    int tableIndex = 0;
-                    while(true)
-                    {
-                        incoming = in.readLine();
-                        
+                    incoming = in.readLine();
+                    
                         if(incoming == "BYE")
-                            break;
-                        
-                        RouteTable[tableIndex][0] = incoming;
-                        incoming = in.readLine();
-                        RouteTable[tableIndex][1] = incoming;
-                        tableIndex++;
-                        
-                    }
-                    
-                    DefaultListModel listModel = new DefaultListModel();
-                    
-                    for(int i=0; i<RouteTable.length; i++){
-                        listModel.addElement(RouteTable[i][0].toString());
-                    }
-                    
-                    WhosOnlineListArea.setModel(listModel);
-                    
-                        
-                    
-                        /*
-                    //set address from GUI input box
-                    address = DestinationIPTextField.getText(); // destination IP (Client)
-
-                    try {
-
-                        // Communication process (initial sends/receives)
-                        out.println(address);// initial send (IP of the destination Client)
-
-                        clientText = in.readLine();// initial receive from router (verification of connection)
-
-                        
-                        MessageTextArea.append("ServerRouter: " + clientText + "\n");
-
-                        // Communication while loop.  Will run as long as
-                        //information is coming from client via the server router.
-                        while ((clientText = in.readLine()) != null) {
+                        {
+                            MessageTextArea.append("Listening for Connections"); 
                             
-                            //This takes in text sent and capitalizes it then
-                            //sends it back to the server router which forwards
-                            //it to the client
-                            MessageTextArea.append("Client said: " + clientText + "\n");
-                            // converting received message to upper case
-                            serverText = clientText.toUpperCase(); 
-                            
-                            MessageTextArea.append("Server said: " + serverText + "\n");
-                            // sending the converted message back to the Client via ServerRouter
-                            out.println(serverText); 
+                            out.close();
+                            in.close();
+                            socket.close();
                         }
-                    
-
-                        //closing connections
-                        out.close();
-                        in.close();
-                        socket.close();
-                
-                    } catch (IOException ex) {
-                        Logger.getLogger(ServerGUI.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                        */
+                        
+      
                 }
             } catch (Exception ex) {
                 Logger.getLogger(ServerGUI.class.getName()).log(Level.SEVERE, null, ex);
@@ -167,12 +180,12 @@ public class ServerGUI extends javax.swing.JFrame {
         jLabel4 = new javax.swing.JLabel();
         DestinationIPTextField = new javax.swing.JTextField();
         jLabel5 = new javax.swing.JLabel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        WhosOnlineListArea = new javax.swing.JList();
+        jLabel6 = new javax.swing.JLabel();
+        ServerSocketField = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jLabel1.setText("Socket:");
+        jLabel1.setText("Router Socket:");
 
         SocketTextField.setText("5555");
 
@@ -198,7 +211,9 @@ public class ServerGUI extends javax.swing.JFrame {
 
         jLabel5.setText("Server");
 
-        jScrollPane2.setViewportView(WhosOnlineListArea);
+        jLabel6.setText("Server Socket:");
+
+        ServerSocketField.setText("5556");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -216,17 +231,19 @@ public class ServerGUI extends javax.swing.JFrame {
                                 .addComponent(IPLabel)))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jScrollPane2)
+                            .addComponent(ServerSocketField)
                             .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(ConnectBtn)
-                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                        .addComponent(jLabel4)
-                                        .addComponent(jLabel2)
-                                        .addComponent(RouterAddressTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 134, Short.MAX_VALUE)
-                                        .addComponent(jLabel1)
-                                        .addComponent(DestinationIPTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 134, Short.MAX_VALUE)
-                                        .addComponent(SocketTextField)))
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                        .addComponent(ConnectBtn)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                            .addComponent(jLabel4)
+                                            .addComponent(jLabel2)
+                                            .addComponent(RouterAddressTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 134, Short.MAX_VALUE)
+                                            .addComponent(jLabel1)
+                                            .addComponent(DestinationIPTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 134, Short.MAX_VALUE)
+                                            .addComponent(SocketTextField)))
+                                    .addComponent(jLabel6))
                                 .addGap(0, 0, Short.MAX_VALUE))))
                     .addComponent(jLabel5))
                 .addContainerGap())
@@ -250,10 +267,13 @@ public class ServerGUI extends javax.swing.JFrame {
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(SocketTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel6)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(ServerSocketField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(7, 7, 7)
                         .addComponent(ConnectBtn)
-                        .addGap(18, 18, 18)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE))
+                        .addGap(0, 147, Short.MAX_VALUE))
                     .addComponent(jScrollPane1))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -270,6 +290,8 @@ public class ServerGUI extends javax.swing.JFrame {
         if (!isConnected) {
             Thread starter = new Thread(new ServerStart());
             starter.start();
+            Thread listen  = new Thread(new Listener());
+            listen.start();
         }
 
     }//GEN-LAST:event_ConnectBtnActionPerformed
@@ -315,14 +337,14 @@ public class ServerGUI extends javax.swing.JFrame {
     private javax.swing.JLabel IPLabel;
     private javax.swing.JTextArea MessageTextArea;
     private javax.swing.JTextField RouterAddressTextField;
+    private javax.swing.JTextField ServerSocketField;
     private javax.swing.JTextField SocketTextField;
-    private javax.swing.JList WhosOnlineListArea;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
     // End of variables declaration//GEN-END:variables
 }
