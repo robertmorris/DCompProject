@@ -27,6 +27,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
     int tableIndex;
     CommunicationThread commThread;
     InetAddress addr;
+    BufferedReader inToMe;
     
     ServerSocket serverToserver;
     Socket serverComSocket;
@@ -56,7 +57,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
         private String[][] RouteTable; // routing table
         private PrintWriter out;
         private PrintWriter outToDestination; // writers (for writing back to the machine and to destination)
-        private BufferedReader in; // reader (for reading from the machine connected to)
+        private BufferedReader incoming; // reader (for reading from the machine connected to)
         private String input;//used for incoming
         private String output;//used for outgoing
         private String clientToAdd;//forwarding IP
@@ -67,38 +68,39 @@ public class ServerRouterGUI extends javax.swing.JFrame {
         
         public ServerHandler(Socket socket,  String[][] table, int index) throws IOException{
             //set the in and out stream for communication
-            out = new PrintWriter(socket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            
             RouteTable = table;
             tableIndex = index;
             incomingServerSocket = socket;
+            outToDestination = new PrintWriter(incomingServerSocket.getOutputStream(), true);
+            incoming = new BufferedReader(new InputStreamReader(incomingServerSocket.getInputStream()));
         }
         @Override
         public void run() {
             
             try {
-                        out.println("Connected, searching");
-                        input = in.readLine();
+                        outToDestination.println("Connected, searching");
+                        input = incoming.readLine();
                         address = input;
                         
                         boolean foundIt = false;
                         for (int i = 0; i < tableIndex; i += 1) {
                 
                          if(RouteTable[i][0].equals(address)){
-                        out.println("FOUND");
-                        out.println(RouteTable[i][0]);
-                        out.println(RouteTable[i][1]);
+                        outToDestination.println("FOUND");
+                        outToDestination.println(RouteTable[i][0]);
+                        outToDestination.println(RouteTable[i][1]);
                         foundIt = true;
                         break;
                     }
                         }
                         
                         if(foundIt == false){
-                            out.println("NOTFOUND");
+                            outToDestination.println("NOTFOUND");
                         }
                         
-                    incomingServerSocket.close();
-                    serverSocket.close();
+                    outToDestination.close();
+                    incoming.close();
                     incomingServerSocket.close();
                 
                     
@@ -126,7 +128,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                 tableIndex = 0; // RouteTable Index
                 //table will hold up to 20 connections
                 RouteTable = new String[20][2];
-                BufferedReader in;
+                
                 String incoming;
 
                 //set serverSocket port
@@ -138,26 +140,24 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                 while (true) {
                     try {
                                                
-                        //new MakeServerRequest(RouteTable, tableIndex).start();                          
-                        //new Handler(serverSocket.accept()).start();
+                        
                         clientSocket = serverSocket.accept();
-                        in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                        incoming = in.readLine();
+                        inToMe = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                        incoming = inToMe.readLine();
                         switch (incoming) {
                             case "CLIENTCOMM":
                                 new CommunicationThread(RouteTable,clientSocket,tableIndex).start();
-                                //new MakeServerRequest(RouteTable, tableIndex).start();
                                 break;
                             case "SERVERREQUEST":
                                 new ServerHandler(clientSocket,RouteTable,tableIndex).start();                             
                                 break;  
-                            case "SERVERCOMM":
+                            case "SERVERCOMM":                               
                                 new ServerConnection(RouteTable,clientSocket,tableIndex).start();
+                                tableIndex++;
+                                break;
                         }
                         
-                        //commThread = new CommunicationThread(RouteTable, clientSocket, tableIndex); // creates a thread with a random port
-                        //commThread.start(); // starts the thread
-                        tableIndex++; // increments the index
+                        
                         //output communication and add client/server to list of connections
                         MessageArea.append("ServerRouter connected with Client/Server: " + clientSocket.getInetAddress().getHostAddress() + "\n");
                         //CSListArea.append(clientSocket.getInetAddress().getHostAddress() + "\n");
@@ -411,8 +411,8 @@ public class ServerRouterGUI extends javax.swing.JFrame {
     public class ServerConnection extends Thread  {
         
         private String[][] RouteTable;
-        private PrintWriter out;
-        private BufferedReader in;
+        private PrintWriter sout;
+        private BufferedReader sin;
         private String input;
         private String output;
         private String address;
@@ -420,27 +420,27 @@ public class ServerRouterGUI extends javax.swing.JFrame {
         private Socket socket;
         
         ServerConnection(String[][] table, Socket cs, int index) throws IOException {
-            
-            out = new PrintWriter(cs.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(cs.getInputStream()));
+            socket = cs;
+            sout = new PrintWriter(socket.getOutputStream(), true);
+            sin = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             RouteTable = table;
-            address = cs.getInetAddress().getHostAddress();
+            address = socket.getInetAddress().getHostAddress();
             //set values into table
             
             tableIndex = index; 
-            socket = cs;
+            
         }
        
         @Override
         public void run(){
             try{
-                out.println("Adding to list");
+                sout.println("Adding to list");
                 RouteTable[tableIndex][0] = address; // IP addresses 
-                input = in.readLine();
+                input = sin.readLine();
                 RouteTable[tableIndex][1] = input; // sockets for communication
-                out.println("BYE");
-                out.close();
-                in.close();
+                sout.println("BYE");
+                sout.close();
+                sin.close();
                 socket.close();
                 
             }
@@ -454,9 +454,9 @@ public class ServerRouterGUI extends javax.swing.JFrame {
     public class CommunicationThread extends Thread {
 
         private String[][] RouteTable; // routing table
-        private PrintWriter out;
+        private PrintWriter out1;
         private PrintWriter out2; // writers (for writing back to the machine and to destination)
-        private BufferedReader in;
+        private BufferedReader in1;
         private BufferedReader in2;// reader (for reading from the machine connected to)
         private String input;//used for incoming
         private String output;//used for outgoing
@@ -472,30 +472,27 @@ public class ServerRouterGUI extends javax.swing.JFrame {
         CommunicationThread(String[][] Table, Socket ClientSoc, int index) throws IOException {
             
             //set the in and out stream for communication
-            out = new PrintWriter(ClientSoc.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(ClientSoc.getInputStream()));
-            RouteTable = Table;
             outGoingSocket = ClientSoc;
-            //address = ClientSoc.getInetAddress().getHostAddress();
-            //set values into table
-            //RouteTable[index][0] = address; // IP addresses 
-            //RouteTable[index][1] = ClientSoc; // sockets for communication
+            out1 = new PrintWriter(outGoingSocket.getOutputStream(), true);
+            in1 = new BufferedReader(new InputStreamReader(outGoingSocket.getInputStream()));
+            RouteTable = Table;
+ 
             tableIndex = index; 
-            //writers = wr;
+
+
             secondServerAddress = SSAddress.getText();
             secondServerPort = Integer.parseInt(SSPort.getText());
-            secondServerSocket = new Socket(secondServerAddress,secondServerPort);
-            out2 = new PrintWriter(secondServerSocket.getOutputStream(), true);
-            in2 = new BufferedReader(new InputStreamReader(secondServerSocket.getInputStream()));
+                    
+            
         }
 
         @Override
         public void run() {
             try{
                 
-                out.println("your in");
+                out1.println("your in");
                 
-                address = in.readLine();
+                address = in1.readLine();
                 
                 boolean foundAddress = false;
                 
@@ -503,9 +500,9 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                 for (int i = 0; i < tableIndex; i += 1) {
                 
                     if(RouteTable[i][0].equals(address)){
-                        out.println("FOUND");
-                        out.println(RouteTable[i][0]);
-                        out.println(RouteTable[i][1]);
+                        out1.println("FOUND");
+                        out1.println(RouteTable[i][0]);
+                        out1.println(RouteTable[i][1]);
                         foundAddress = true;
                         break;
                     }
@@ -513,29 +510,44 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                 }
                 if(foundAddress == false){
                     
-                    //new MakeServerRequest(outGoingSocket,address).start();
+                    
+                    secondServerSocket = new Socket(secondServerAddress,secondServerPort);
+                    out2 = new PrintWriter(secondServerSocket.getOutputStream(), true);
+                    in2 = new BufferedReader(new InputStreamReader(secondServerSocket.getInputStream()));
                     out2.println("SERVERREQUEST");
                     input = in2.readLine();
+                    MessageArea.append(input);
                     out2.println(address);
                     input = in2.readLine();
                     
-                    if(input.equals("FOUND")){
-                        input = in2.readLine();
-                        out.println(input);
-                        input = in2.readLine();
-                        out.println(input);
+                    String address;
+                    String port;
+                    if(input.equals("FOUND")){                     
+                        address = in2.readLine();
+                        port = in2.readLine();
+                        
+
+                        out1.println("FOUND");
+                        out1.println(address);
+                        out1.println(port);
                     }
                 }
 
-            out.close();
-            in.close();
-            outGoingSocket.close();
-            out2.close();
-            in2.close();
-            secondServerSocket.close();
+            
             
             } catch (IOException ex) {
                 Logger.getLogger(ServerRouterGUI.class.getName()).log(Level.SEVERE, null, ex);
+            }finally{
+                try {
+                    out1.close();
+                    in1.close();
+                    outGoingSocket.close();
+                    out2.close();
+                    in2.close();
+                    secondServerSocket.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(ServerRouterGUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
             
             }
@@ -573,6 +585,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                 out2.println(address);
                 input = in2.readLine();
                 if(input.equals("FOUND")){
+                    out.println("FOUND");
                     input = in2.readLine();
                     out.println(input);
                     input = in2.readLine();
