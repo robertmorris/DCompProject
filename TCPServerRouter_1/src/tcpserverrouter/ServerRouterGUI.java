@@ -140,13 +140,15 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                 while (true) {
                     try {
                                                
-                        
+                        //new MakeServerRequest(RouteTable, tableIndex).start();                          
+                        //new Handler(serverSocket.accept()).start();
                         clientSocket = serverSocket.accept();
                         inToMe = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                         incoming = inToMe.readLine();
                         switch (incoming) {
                             case "CLIENTCOMM":
                                 new CommunicationThread(RouteTable,clientSocket,tableIndex).start();
+                                //new MakeServerRequest(RouteTable, tableIndex).start();
                                 break;
                             case "SERVERREQUEST":
                                 new ServerHandler(clientSocket,RouteTable,tableIndex).start();                             
@@ -157,7 +159,11 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                                 break;
                         }
                         
+                        //in.close();
                         
+                        //commThread = new CommunicationThread(RouteTable, clientSocket, tableIndex); // creates a thread with a random port
+                        //commThread.start(); // starts the thread
+                        //tableIndex++; // increments the index
                         //output communication and add client/server to list of connections
                         MessageArea.append("ServerRouter connected with Client/Server: " + clientSocket.getInetAddress().getHostAddress() + "\n");
                         //CSListArea.append(clientSocket.getInetAddress().getHostAddress() + "\n");
@@ -516,7 +522,6 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                     in2 = new BufferedReader(new InputStreamReader(secondServerSocket.getInputStream()));
                     out2.println("SERVERREQUEST");
                     input = in2.readLine();
-                    MessageArea.append(input);
                     out2.println(address);
                     input = in2.readLine();
                     
@@ -527,7 +532,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                         port = in2.readLine();
                         
 
-                        out1.println("FOUND");
+                        out1.print("FOUND");
                         out1.println(address);
                         out1.println(port);
                     }
