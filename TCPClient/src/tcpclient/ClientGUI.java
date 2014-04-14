@@ -74,8 +74,6 @@ public class ClientGUI extends javax.swing.JFrame {
                 Socket socket2 = new  Socket();
                 out = null; // for writing to ServerRouter
                 in = null; // for reading form ServerRouter
-                PrintWriter out2 = null; // for writing to ServerRouter
-                BufferedReader in2 = null;
                 String incoming;
                 routerIP = RouterTextField.getText();
                 portNumber = Integer.parseInt(SocketTextField.getText()); // port number
@@ -107,16 +105,15 @@ public class ClientGUI extends javax.swing.JFrame {
                 
                 incoming = in.readLine();
 
-                if(incoming.equals("FOUND")){
-                    
+                if(incoming.contains("FOUND")){                   
                      address = in.readLine();
                      portNumber = Integer.parseInt(in.readLine());
                      socketToServer = new Socket(address, portNumber);
                      out = new PrintWriter(socketToServer.getOutputStream(), true);
                      in = new BufferedReader(new InputStreamReader(socketToServer.getInputStream()));
-                     in.close();
-                     out.close();
-                     socket.close();
+                     //in.close();
+                     //out.close();
+                     //socket.close();
                     //open up a file chooser.  Allows users to pick what file they want
                 //to send.
                 int returnVal = chooser.showOpenDialog(null);
@@ -149,13 +146,13 @@ public class ClientGUI extends javax.swing.JFrame {
                     if (clientText != null) {
 
                         MessageTextArea.append("Client: " + clientText + "\n");
-                        out2.println(clientText); // sending the strings to the Server via ServerRouter
+                        out.println(clientText); // sending the strings to the Server via ServerRouter
                         t0 = System.currentTimeMillis();
                     }
                     //I had trouble with the client not waiting for server.
                     //this seemed to fix it.
                     //it keeps the client from going forward until he gets a response.
-                    serverText = in2.readLine();
+                    serverText = in.readLine();
                     MessageTextArea.append(serverText + "\n");
                 }
 
@@ -167,19 +164,18 @@ public class ClientGUI extends javax.swing.JFrame {
                 }
 
                 MessageTextArea.append("\n Total Time: " + totalTime);
+                
                 }
                 else
                 {
                     MessageTextArea.append("Unable to find server");
                 }
                 
-               
-
-                
+                     
 
                 //closing connections
-                out2.close();
-                in2.close();
+                out.close();
+                in.close();
                 socketToServer.close();
 
             } catch (Exception ex) {
