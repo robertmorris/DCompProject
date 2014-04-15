@@ -71,7 +71,6 @@ public class ClientGUI extends javax.swing.JFrame {
             try {
 
                 socket = null; // socket to connect with ServerRouter
-                Socket socket2 = new  Socket();
                 out = null; // for writing to ServerRouter
                 in = null; // for reading form ServerRouter
                 String incoming;
@@ -111,9 +110,7 @@ public class ClientGUI extends javax.swing.JFrame {
                      socketToServer = new Socket(address, portNumber);
                      out = new PrintWriter(socketToServer.getOutputStream(), true);
                      in = new BufferedReader(new InputStreamReader(socketToServer.getInputStream()));
-                     //in.close();
-                     //out.close();
-                     //socket.close();
+                     
                     //open up a file chooser.  Allows users to pick what file they want
                 //to send.
                 int returnVal = chooser.showOpenDialog(null);
@@ -177,6 +174,7 @@ public class ClientGUI extends javax.swing.JFrame {
                 out.close();
                 in.close();
                 socketToServer.close();
+                socket.close();
 
             } catch (Exception ex) {
                 Logger.getLogger(ClientGUI.class.getName()).log(Level.SEVERE, null, ex);
@@ -220,8 +218,6 @@ public class ClientGUI extends javax.swing.JFrame {
         jLabel2.setText("Destination IP:");
 
         jLabel3.setText("Socket: ");
-
-        SocketTextField.setText("5555");
 
         jLabel4.setText("Router Address:");
 
