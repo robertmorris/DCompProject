@@ -25,7 +25,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
     String[][] RouteTable; // routing table
     int portNumber;
     int tableIndex;
-    CommunicationThread commThread;
+    //CommunicationThread commThread;
     InetAddress addr;
     BufferedReader inToMe;
     
@@ -36,8 +36,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
     public ServerRouterGUI() {
 
         initComponents();
-
-        
+  
         running = false;
 
         try {
@@ -107,7 +106,14 @@ public class ServerRouterGUI extends javax.swing.JFrame {
             }// end try
             catch (Exception e) {
                
-                MessageArea.append("Could not listen to socket. \n");
+                try {
+                    MessageArea.append("Could not listen to socket. \n");
+                    outToDestination.close();
+                    incoming.close();
+                    incomingServerSocket.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(ServerRouterGUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
                 
             }
                 
@@ -139,8 +145,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
 
                 while (true) {
                     try {
-                                               
-                        
+                       
                         clientSocket = serverSocket.accept();
                         inToMe = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                         incoming = inToMe.readLine();
@@ -156,8 +161,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                                 tableIndex++;
                                 break;
                         }
-                        
-                        
+                      
                         //output communication and add client/server to list of connections
                         MessageArea.append("ServerRouter connected with Client/Server: " + clientSocket.getInetAddress().getHostAddress() + "\n");
                         //CSListArea.append(clientSocket.getInetAddress().getHostAddress() + "\n");
@@ -172,12 +176,17 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                 }//end while
 
                 //closing connections
-                //clientSocket.close();
-                //serverSocket.close();
+                
                 
             } catch (IOException e) {
-                MessageArea.append("Could not listen on port: \n");
-                e.printStackTrace();
+                try {
+                    MessageArea.append("Could not listen on port: \n");
+                    e.printStackTrace();
+                    clientSocket.close();
+                    serverSocket.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(ServerRouterGUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
 
         }
@@ -238,7 +247,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
             }
         });
 
-        jLabel2.setText("Client/Servers Online");
+        jLabel2.setText("Servers Online");
 
         CSListArea.setEditable(false);
         CSListArea.setColumns(20);
@@ -247,19 +256,13 @@ public class ServerRouterGUI extends javax.swing.JFrame {
 
         jLabel3.setText("Socket:");
 
-        SocketTextField.setText("5555");
-
         jLabel4.setText("ServerRouterIP:");
 
         SRIPlabel.setText("127.0.0.1");
 
         jLabel5.setText("Second Server Socket:");
 
-        SSPort.setText("5557");
-
         jLabel6.setText("Second Server IP:");
-
-        SSAddress.setText("127.0.0.1");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -297,11 +300,11 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jLabel5)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(SSPort, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(SSPort, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel6)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(SSAddress, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(SSAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 72, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
         );
         layout.setVerticalGroup(
@@ -340,9 +343,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
         if (!running) {
             Thread starter = new Thread(new ServerStart());
             starter.start();
-            
-            //Thread serverToserverThread = new Thread(new ServerToServer());
-            //serverToserverThread.start();
+           
         }
 
     }//GEN-LAST:event_StartBtnActionPerformed
@@ -425,8 +426,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
             sin = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             RouteTable = table;
             address = socket.getInetAddress().getHostAddress();
-            //set values into table
-            
+            //set values into table 
             tableIndex = index; 
             
         }
@@ -435,6 +435,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
         public void run(){
             try{
                 sout.println("Adding to list");
+                CSListArea.append(address);
                 RouteTable[tableIndex][0] = address; // IP addresses 
                 input = sin.readLine();
                 RouteTable[tableIndex][1] = input; // sockets for communication
@@ -479,7 +480,6 @@ public class ServerRouterGUI extends javax.swing.JFrame {
  
             tableIndex = index; 
 
-
             secondServerAddress = SSAddress.getText();
             secondServerPort = Integer.parseInt(SSPort.getText());
                     
@@ -490,7 +490,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
         public void run() {
             try{
                 
-                out1.println("your in");
+                out1.println("Searching for Server....");
                 
                 address = in1.readLine();
                 
@@ -525,7 +525,6 @@ public class ServerRouterGUI extends javax.swing.JFrame {
                     if(input.equals("FOUND")){                     
                         address = in2.readLine();
                         port = in2.readLine();
-                        
 
                         out1.println("FOUND");
                         out1.println(address);
@@ -553,54 +552,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
             }
             
         }
-    public class MakeServerRequest extends Thread{
-        private Socket socket;
-        private Socket secondServerSocket;
-        private String secondServerAddress;
-        private int secondServerPort;
-        private String address;
-        private PrintWriter out;
-        private BufferedReader in;
-        private PrintWriter out2;
-        private BufferedReader in2;
-        private String input;
-        private String output;
-        
-        MakeServerRequest(Socket s, String a)throws IOException {
-            out = new PrintWriter(s.getOutputStream(),true);
-            in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-            address = a;
-            secondServerAddress = SSAddress.getText();
-            secondServerPort = Integer.parseInt(SSPort.getText());
-            secondServerSocket = new Socket(secondServerAddress,secondServerPort);
-            out2 = new PrintWriter(secondServerSocket.getOutputStream(), true);
-            in2 = new BufferedReader(new InputStreamReader(secondServerSocket.getInputStream()));
-        }
-        
-        public void run(){
-          
-            try {
-                out2.println("SERVERREQUEST");
-                input = in2.readLine();
-                out2.println(address);
-                input = in2.readLine();
-                if(input.equals("FOUND")){
-                    out.println("FOUND");
-                    input = in2.readLine();
-                    out.println(input);
-                    input = in2.readLine();
-                    out.println(input);
-                }
-                else{
-                    
-                }
-            } catch (IOException ex) {
-                Logger.getLogger(ServerRouterGUI.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-    }
-    
-   
+
     }
 
 
