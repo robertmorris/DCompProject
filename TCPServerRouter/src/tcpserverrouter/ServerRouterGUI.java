@@ -435,7 +435,7 @@ public class ServerRouterGUI extends javax.swing.JFrame {
         public void run(){
             try{
                 sout.println("Adding to list");
-                CSListArea.append(address);
+                CSListArea.append(address + "\n");
                 RouteTable[tableIndex][0] = address; // IP addresses 
                 input = sin.readLine();
                 RouteTable[tableIndex][1] = input; // sockets for communication
